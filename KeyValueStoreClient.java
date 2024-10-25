@@ -24,22 +24,39 @@ public class KeyValueStoreClient {
             KeyValueStore keyValueStore = (KeyValueStore) registry.lookup("KeyValueStore");
 
             logger.info("\nWelcome to the RMI Key-Value Store Client");
+            logger.info("\nPre-population of 5 key-value pairs completed:\n");
 
-            // Pre-populate the key-value store
-            logger.info(keyValueStore.put("name", "Diya"));
-            logger.info(keyValueStore.put("age", "20"));
-            logger.info(keyValueStore.put("city", "Manama"));
-            logger.info(keyValueStore.put("country", "Bahrain"));
-            logger.info(keyValueStore.put("profession", "Student"));
+            // Insert key-value pairs
+            keyValueStore.put("name", "Diya");
+            keyValueStore.put("age", "20");
+            keyValueStore.put("city", "Manama");
+            keyValueStore.put("country", "Bahrain");
+            keyValueStore.put("profession", "Student");
 
-            logger.info("\nPre-populated 5 key-value pairs:\n");
+            // Retrieve and log the values
+            logger.info("Retrieved name: " + keyValueStore.get("name"));
+            logger.info("Retrieved age: " + keyValueStore.get("age"));
+            logger.info("Retrieved city: " + keyValueStore.get("city"));
+            logger.info("Retrieved country: " + keyValueStore.get("country"));
+            logger.info("Retrieved profession: " + keyValueStore.get("profession"));
+
+            // Delete the key-value pairs
+            keyValueStore.delete("name");
+            keyValueStore.delete("age");
+            keyValueStore.delete("city");
+            keyValueStore.delete("country");
+            keyValueStore.delete("profession");
+
+            // Log the deletion
+            logger.info("Deleted the 5 key-value pairs.");
 
             // Operations counters
             int putCount = 0, getCount = 0, deleteCount = 0;
 
             Scanner scanner = new Scanner(System.in);
             while (true) {
-                logger.info("\nWhat would you like to do? \n1. Add a key-value pair\n2. Get a value by key\n3. Delete a key-value pair\n4. Exit\nEnter your choice:\n");
+                logger.info(
+                        "\nWhat would you like to do? \n1. Add a key-value pair\n2. Get a value by key\n3. Delete a key-value pair\n4. Exit\nEnter your choice:\n");
                 int choice = scanner.nextInt();
                 scanner.nextLine(); // Consume the newline character
 
@@ -74,7 +91,8 @@ public class KeyValueStoreClient {
                             logger.info("Exiting...");
                             response = "EXIT"; // Send exit command to the server
                         } else {
-                            logger.info("You need to perform " + (5 - putCount) + " more PUT, " + (5 - getCount) + " GET, and " + (5 - deleteCount) + " DELETE operations before exiting");
+                            logger.info("You need to perform " + (5 - putCount) + " more PUT, " + (5 - getCount)
+                                    + " GET, and " + (5 - deleteCount) + " DELETE operations before exiting");
                             continue;
                         }
                         break;
