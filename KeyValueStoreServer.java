@@ -17,10 +17,11 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
     public synchronized String put(String key, String value) throws RemoteException {
         String response;
         if (keyValueStore.containsKey(key)) {
-            logger.info("Updated value for key: " + key);
+            logger.info("Key already exists. Updating value for key: " + key + "with value: " + value);
             keyValueStore.put(key, value);
-            response = "Key already exists. Updating value for key: " + key;
+            response = "Key already exists. Updating value for key: " + key + "with value: " + value;
         } else {
+            logger.info("Added key-value pair: " + key + " = " + value);
             keyValueStore.put(key, value);
             response = "PUT successful: " + key + " = " + value;
         }
@@ -28,10 +29,12 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
     }
 
     public synchronized String get(String key) throws RemoteException {
+        logger.info("Retrieved value for key: " + key);
         return keyValueStore.containsKey(key) ? keyValueStore.get(key) : "Key not found: " + key;
     }
 
     public synchronized String delete(String key) throws RemoteException {
+        logger.info("Deleted key: " + key);
         return keyValueStore.remove(key) != null ? "DELETE successful: " + key : "Key not found for deletion: " + key;
     }
 
@@ -43,7 +46,7 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
                 rootLogger.removeHandler(handler);
             }
 
-            FileHandler fileHandler = new FileHandler("logs/RMIKeyValueStoreServer.log");
+            FileHandler fileHandler = new FileHandler("logs/RMIServer.log");
             fileHandler.setFormatter(new CustomFormatter());
             logger.addHandler(fileHandler);
 
