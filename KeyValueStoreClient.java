@@ -47,6 +47,8 @@ public class KeyValueStoreClient {
                 keyValueStore.put("client" + clientId + "_country", "Bahrain");
                 keyValueStore.put("client" + clientId + "_profession", "Student");
 
+                KeyValueStoreClient.logger.info("Client " + clientId + " added its key-value pairs.");
+
                 // Retrieve and log the values
                 KeyValueStoreClient.logger.info("Client " + clientId + " retrieved name: "
                         + keyValueStore.get("client" + clientId + "_name"));
