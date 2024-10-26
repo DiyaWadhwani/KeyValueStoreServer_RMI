@@ -57,8 +57,10 @@ The client performs the following operations:
 
 **You can check the server or client logs using the following commands:**
 
-`docker logs kv_store_server`
-`docker logs kv_store_client`
+```bash
+docker logs kv_store_server
+docker logs kv_store_client
+```
 
 # Custom Logger Format
 
