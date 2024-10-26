@@ -14,7 +14,7 @@ This project implements a simple Key-Value Store using Java Remote Method Invoca
 
 - Java Development Kit (JDK) 17 or higher
 - RMI Registry (automatically started by the server)
-- Docker (optional, for containerization)
+- Docker
 
 ## How to Run
 
