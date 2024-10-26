@@ -10,42 +10,68 @@ public class KeyValueStoreClient {
     public static void main(String[] args) {
         setupLogger();
 
-        String hostname = "kv_store_server"; // You can replace this with args[0] if needed
-        int port = 1099; // You can replace this with Integer.parseInt(args[1]) if needed
+        String hostname = "kv_store_server";
+        int port = 1099;
 
-        try {
-            Registry registry = LocateRegistry.getRegistry(hostname, port);
-            KeyValueStore keyValueStore = (KeyValueStore) registry.lookup("KeyValueStore");
+        // Create multiple client threads
+        for (int i = 1; i <= 5; i++) {
+            Thread clientThread = new Thread(new ClientRunnable(hostname, port, i));
+            clientThread.start();
+        }
+    }
 
-            logger.info("\nWelcome to the RMI Key-Value Store Client");
-            logger.info("\nPre-population of 5 key-value pairs completed:\n");
+    private static class ClientRunnable implements Runnable {
+        private final String hostname;
+        private final int port;
+        private final int clientId;
 
-            // Insert key-value pairs
-            keyValueStore.put("name", "Diya");
-            keyValueStore.put("age", "20");
-            keyValueStore.put("city", "Manama");
-            keyValueStore.put("country", "Bahrain");
-            keyValueStore.put("profession", "Student");
+        public ClientRunnable(String hostname, int port, int clientId) {
+            this.hostname = hostname;
+            this.port = port;
+            this.clientId = clientId;
+        }
 
-            // Retrieve and log the values
-            logger.info("Retrieved name: " + keyValueStore.get("name"));
-            logger.info("Retrieved age: " + keyValueStore.get("age"));
-            logger.info("Retrieved city: " + keyValueStore.get("city"));
-            logger.info("Retrieved country: " + keyValueStore.get("country"));
-            logger.info("Retrieved profession: " + keyValueStore.get("profession"));
+        @Override
+        public void run() {
+            try {
+                Registry registry = LocateRegistry.getRegistry(hostname, port);
+                KeyValueStore keyValueStore = (KeyValueStore) registry.lookup("KeyValueStore");
 
-            // Delete the key-value pairs
-            keyValueStore.delete("name");
-            keyValueStore.delete("age");
-            keyValueStore.delete("city");
-            keyValueStore.delete("country");
-            keyValueStore.delete("profession");
+                // Log the client ID
+                KeyValueStoreClient.logger.info("Client " + clientId + " starting.");
 
-            // Log the deletion
-            logger.info("Deleted the 5 key-value pairs.");
+                // Pre-populate key-value pairs
+                keyValueStore.put("client" + clientId + "_name", "Diya" + clientId);
+                keyValueStore.put("client" + clientId + "_age", "20");
+                keyValueStore.put("client" + clientId + "_city", "Manama");
+                keyValueStore.put("client" + clientId + "_country", "Bahrain");
+                keyValueStore.put("client" + clientId + "_profession", "Student");
 
-        } catch (Exception e) {
-            logger.severe("Client error: " + e.getMessage());
+                // Retrieve and log the values
+                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved name: "
+                        + keyValueStore.get("client" + clientId + "_name"));
+                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved age: "
+                        + keyValueStore.get("client" + clientId + "_age"));
+                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved city: "
+                        + keyValueStore.get("client" + clientId + "_city"));
+                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved country: "
+                        + keyValueStore.get("client" + clientId + "_country"));
+                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved profession: "
+                        + keyValueStore.get("client" + clientId + "_profession"));
+
+                // Delete the key-value pairs
+                keyValueStore.delete("client" + clientId + "_name");
+                keyValueStore.delete("client" + clientId + "_age");
+                keyValueStore.delete("client" + clientId + "_city");
+                keyValueStore.delete("client" + clientId + "_country");
+                keyValueStore.delete("client" + clientId + "_profession");
+
+                // Log the deletion
+                KeyValueStoreClient.logger.info("Client " + clientId + " deleted its key-value pairs.");
+
+            } catch (Exception e) {
+                KeyValueStoreClient.logger.severe("Client " + clientId + " error: " + e.getMessage());
+            }
         }
     }
 

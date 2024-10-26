@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.*;
 import java.io.IOException;
 
@@ -15,7 +14,7 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
 
     private static final Logger logger = Logger.getLogger(KeyValueStoreServer.class.getName());
     private static final int PORT = 1099;
-    private static final int THREAD_POOL_SIZE = 10; // Configure as needed
+    private static final int THREAD_POOL_SIZE = 10;
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     private final Map<String, String> keyValueStore = new ConcurrentHashMap<>();
 
@@ -34,54 +33,66 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
     }
 
     public String put(String key, String value) throws RemoteException {
-        Future<String> futureResponse = executorService.submit(() -> {
-            String response;
-            if (keyValueStore.containsKey(key)) {
-                logger.info("Key already exists. Updating value for key: " + key + " with value: " + value);
-                keyValueStore.put(key, value);
-                response = "Key already exists. Updating value for key: " + key + " with value: " + value;
-            } else {
-                logger.info("Added key-value pair: " + key + " = " + value);
-                keyValueStore.put(key, value);
-                response = "PUT successful: " + key + " = " + value;
-            }
-            return response;
-        });
-
         try {
-            return futureResponse.get(); // Wait for the task to complete and return the result
-        } catch (InterruptedException | ExecutionException e) {
-            logger.severe("Error executing put operation: " + e.getMessage());
-            return "Error occurred while putting the key-value pair.";
+            return executorService.submit(() -> {
+                synchronized (this) { // Synchronized to ensure mutual exclusion for put operations
+                    String response;
+                    if (keyValueStore.containsKey(key)) {
+                        logger.info("Key already exists. Updating value for key: " + key + " with value: " + value);
+                        keyValueStore.put(key, value);
+                        response = "Key already exists. Updating value for key: " + key + " with value: " + value;
+                    } else {
+                        logger.info("Added key-value pair: " + key + " = " + value);
+                        keyValueStore.put(key, value);
+                        response = "PUT successful: " + key + " = " + value;
+                    }
+                    return response;
+                }
+            }).get(); // block until result is available
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restore the interrupted status
+            logger.severe("Thread was interrupted while processing put: " + e.getMessage());
+            return "PUT operation was interrupted";
+        } catch (ExecutionException e) {
+            logger.severe("Execution exception during put: " + e.getMessage());
+            return "PUT operation failed: " + e.getCause().getMessage();
         }
     }
 
     public String get(String key) throws RemoteException {
-        Future<String> futureResponse = executorService.submit(() -> {
-            logger.info("Retrieved value for key: " + key);
-            return keyValueStore.containsKey(key) ? keyValueStore.get(key) : "Key not found: " + key;
-        });
-
         try {
-            return futureResponse.get(); // Wait for the task to complete and return the result
-        } catch (InterruptedException | ExecutionException e) {
-            logger.severe("Error executing get operation: " + e.getMessage());
-            return "Error occurred while retrieving the value.";
+            return executorService.submit(() -> {
+                synchronized (this) { // Synchronized to ensure mutual exclusion for get operations
+                    logger.info("Retrieved value for key: " + key);
+                    return keyValueStore.containsKey(key) ? keyValueStore.get(key) : "Key not found: " + key;
+                }
+            }).get(); // block until result is available
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.severe("Thread was interrupted while processing get: " + e.getMessage());
+            return "GET operation was interrupted";
+        } catch (ExecutionException e) {
+            logger.severe("Execution exception during get: " + e.getMessage());
+            return "GET operation failed: " + e.getCause().getMessage();
         }
     }
 
     public String delete(String key) throws RemoteException {
-        Future<String> futureResponse = executorService.submit(() -> {
-            logger.info("Deleted key: " + key);
-            return keyValueStore.remove(key) != null ? "DELETE successful: " + key
-                    : "Key not found for deletion: " + key;
-        });
-
         try {
-            return futureResponse.get(); // Wait for the task to complete and return the result
-        } catch (InterruptedException | ExecutionException e) {
-            logger.severe("Error executing delete operation: " + e.getMessage());
-            return "Error occurred while deleting the key.";
+            return executorService.submit(() -> {
+                synchronized (this) { // Synchronized to ensure mutual exclusion for delete operations
+                    logger.info("Deleted key: " + key);
+                    return keyValueStore.remove(key) != null ? "DELETE successful: " + key
+                            : "Key not found for deletion: " + key;
+                }
+            }).get(); // block until the result is available
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restore the interrupted status
+            logger.severe("Thread was interrupted while processing delete: " + e.getMessage());
+            return "DELETE operation was interrupted";
+        } catch (ExecutionException e) {
+            logger.severe("Execution exception during delete: " + e.getMessage());
+            return "DELETE operation failed: " + e.getCause().getMessage();
         }
     }
 
