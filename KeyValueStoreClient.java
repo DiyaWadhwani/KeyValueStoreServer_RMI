@@ -1,6 +1,5 @@
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Scanner;
 import java.util.logging.*;
 import java.io.IOException;
 
@@ -11,13 +10,8 @@ public class KeyValueStoreClient {
     public static void main(String[] args) {
         setupLogger();
 
-        if (args.length != 2) {
-            logger.info("Usage: java KeyValueStoreClient <hostname> <port>");
-            return;
-        }
-
-        String hostname = args[0];
-        int port = Integer.parseInt(args[1]);
+        String hostname = "kv_store_server"; // You can replace this with args[0] if needed
+        int port = 1099; // You can replace this with Integer.parseInt(args[1]) if needed
 
         try {
             Registry registry = LocateRegistry.getRegistry(hostname, port);
@@ -50,65 +44,6 @@ public class KeyValueStoreClient {
             // Log the deletion
             logger.info("Deleted the 5 key-value pairs.");
 
-            // Operations counters
-            int putCount = 0, getCount = 0, deleteCount = 0;
-
-            Scanner scanner = new Scanner(System.in);
-            while (true) {
-                logger.info(
-                        "\nWhat would you like to do? \n1. Add a key-value pair\n2. Get a value by key\n3. Delete a key-value pair\n4. Exit\nEnter your choice:\n");
-                int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume the newline character
-
-                String response = "";
-
-                switch (choice) {
-                    case 1:
-                        logger.info("\nEnter the key (in lowercase):");
-                        String key = scanner.nextLine().toLowerCase();
-                        logger.info("\nEnter the value (use underscore between multi-word values):");
-                        String value = scanner.nextLine();
-                        response = keyValueStore.put(key, value);
-                        putCount++;
-                        break;
-
-                    case 2:
-                        logger.info("\nEnter the key (in lowercase):");
-                        key = scanner.nextLine().toLowerCase();
-                        response = keyValueStore.get(key);
-                        getCount++;
-                        break;
-
-                    case 3:
-                        logger.info("\nEnter the key (in lowercase):");
-                        key = scanner.nextLine().toLowerCase();
-                        response = keyValueStore.delete(key);
-                        deleteCount++;
-                        break;
-
-                    case 4:
-                        if (putCount > 4 && getCount > 4 && deleteCount > 4) {
-                            logger.info("Exiting...");
-                            response = "EXIT"; // Send exit command to the server
-                        } else {
-                            logger.info("You need to perform " + (5 - putCount) + " more PUT, " + (5 - getCount)
-                                    + " GET, and " + (5 - deleteCount) + " DELETE operations before exiting");
-                            continue;
-                        }
-                        break;
-
-                    default:
-                        logger.info("Invalid choice. Please try again.");
-                        continue; // Skip sending for invalid choices
-                }
-
-                logger.info(response);
-
-                if (response.equalsIgnoreCase("EXIT")) {
-                    break; // Exit the loop for exit command
-                }
-            }
-            scanner.close();
         } catch (Exception e) {
             logger.severe("Client error: " + e.getMessage());
         }
