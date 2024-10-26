@@ -55,11 +55,11 @@ The client performs the following operations:
 
 # Logging
 
-Logs are stored in the `logs/` directory.  
-Two log files are created:
-
-- `RMIServer.log` for server operations
-- `RMIClient.log` for client operations
+**You can check the server or client logs using the following commands:**
+`bash
+    docker logs kv_store_server
+    docker logs kv_store_client
+    `
 
 # Custom Logger Format
 
