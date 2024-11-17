@@ -92,7 +92,7 @@ docker-compose up --build
 
 ### 3. **Run the Client**
 
-Head to Docker, and run the client container to view logs and interact with the system.
+Head to Docker, and run the client container to view logs.
 
 ---
 
