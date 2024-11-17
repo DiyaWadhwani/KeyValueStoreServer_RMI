@@ -90,17 +90,9 @@ git checkout server_replication-2pc
 docker-compose up --build
 ```
 
-![Terminal Logs](images/terminalLogsBuild.png "Terminal Logs Build")
-
-![Docker Containers](images/dockerContainersBuild.png "Docker Containers Build")
-
 ### 3. **Run the Client**
 
 Head to Docker, and run the client container to view logs and interact with the system.
-
-![Terminal Logs](images/terminalLogsRun.png "Terminal Logs Run")
-
-![Docker Containers](images/dockerContainersRun.png "Docker Containers Run")
 
 ---
 
@@ -152,19 +144,19 @@ DELETE City: Succeeded
 
 - **Terminal Logs on Building Docker Compose file**:
 
-  - ![Terminal Logs](images/terminalLogsBuild.png "Terminal Logs Build")
+![Terminal Logs](images/terminalLogsBuild.png "Terminal Logs Build")
 
 - **Docker Logs on Building Docker Compose file from Terminal**:
 
-  - ![Docker Containers](images/dockerContainersBuild.png "Docker Containers Build")
+![Docker Containers](images/dockerContainersBuild.png "Docker Containers Build")
 
 - **Terminal Logs on Running Client from Docker**:
 
-  - ![Terminal Logs](images/terminalLogsRun.png "Terminal Logs Run")
+![Terminal Logs](images/terminalLogsRun.png "Terminal Logs Run")
 
 - **Docker Logs on Running Client**:
 
-  - ![Docker Containers](images/dockerContainersRun.png "Docker Containers Run")
+![Docker Containers](images/dockerContainersRun.png "Docker Containers Run")
 
 ---
 
