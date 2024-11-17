@@ -1,14 +1,14 @@
-# Use the OpenJDK image as the base
-FROM openjdk:17-jdk
+# Use an official OpenJDK image
+FROM openjdk:17-jdk-slim
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy all files from the current directory to /app in the container
-COPY . /app
+# Copy the Java files into the image
+COPY KeyValueStoreInterface.java KeyValueStoreClient.java /app/
 
-# Compile Java files
-RUN javac *.java
+# Compile the Java files
+RUN javac KeyValueStoreInterface.java KeyValueStoreClient.java
 
-# Specify the command to run the client
-CMD ["java", "KeyValueStoreClient", "kv_store_server", "1099"]
+# Set the command to run the client
+CMD ["java", "KeyValueStoreClient", "kv_server_1", "5010"]

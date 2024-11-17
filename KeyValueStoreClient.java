@@ -1,101 +1,61 @@
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.util.logging.*;
-import java.io.IOException;
+import java.rmi.*;
+import java.rmi.registry.*;
+import java.util.Scanner;
 
 public class KeyValueStoreClient {
+    private final KeyValueStoreInterface server;
 
-    private static final Logger logger = Logger.getLogger(KeyValueStoreClient.class.getName());
+    public KeyValueStoreClient(String host, int port) throws Exception {
+        Registry registry = LocateRegistry.getRegistry(host, port);
+        this.server = (KeyValueStoreInterface) registry.lookup("KeyValueStore");
+    }
+
+    public void testOperations() throws RemoteException {
+        // Real-world key-value pairs for testing
+        String[][] data = {
+                { "Name", "Diya" },
+                { "Age", "20" },
+                { "Course", "Distributed Systems" },
+                { "School", "Northeastern University" },
+                { "City", "California" },
+        };
+
+        System.out.println("Performing 5 PUT operations...");
+        for (String[] entry : data) {
+            String key = entry[0];
+            String value = entry[1];
+            boolean putResult = server.put(key, value);
+            System.out.println("PUT " + key + " -> " + value + ": " + (putResult ? "Succeeded" : "Failed"));
+        }
+
+        System.out.println("\nPerforming 5 GET operations...");
+        for (String[] entry : data) {
+            String key = entry[0];
+            String value = server.get(key);
+            System.out.println("GET " + key + ": " + (value != null ? value : "Key not found"));
+        }
+
+        System.out.println("\nPerforming 5 DELETE operations...");
+        for (String[] entry : data) {
+            String key = entry[0];
+            boolean deleteResult = server.delete(key);
+            System.out.println("DELETE " + key + ": " + (deleteResult ? "Succeeded" : "Failed"));
+        }
+
+        System.out.println("\nAll operations completed.");
+    }
 
     public static void main(String[] args) {
-        setupLogger();
-
-        String hostname = "kv_store_server";
-        int port = 1099;
-
-        // Create multiple client threads
-        for (int i = 1; i <= 5; i++) {
-            Thread clientThread = new Thread(new ClientRunnable(hostname, port, i));
-            clientThread.start();
-        }
-    }
-
-    private static class ClientRunnable implements Runnable {
-        private final String hostname;
-        private final int port;
-        private final int clientId;
-
-        public ClientRunnable(String hostname, int port, int clientId) {
-            this.hostname = hostname;
-            this.port = port;
-            this.clientId = clientId;
-        }
-
-        @Override
-        public void run() {
-            try {
-                Registry registry = LocateRegistry.getRegistry(hostname, port);
-                KeyValueStore keyValueStore = (KeyValueStore) registry.lookup("KeyValueStore");
-
-                // Log the client ID
-                KeyValueStoreClient.logger.info("Client " + clientId + " starting.");
-
-                // Pre-populate key-value pairs
-                keyValueStore.put("client" + clientId + "_name", "Diya" + clientId);
-                keyValueStore.put("client" + clientId + "_age", "20");
-                keyValueStore.put("client" + clientId + "_city", "Manama");
-                keyValueStore.put("client" + clientId + "_country", "Bahrain");
-                keyValueStore.put("client" + clientId + "_profession", "Student");
-
-                KeyValueStoreClient.logger.info("Client " + clientId + " added its key-value pairs.");
-
-                // Retrieve and log the values
-                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved name: "
-                        + keyValueStore.get("client" + clientId + "_name"));
-                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved age: "
-                        + keyValueStore.get("client" + clientId + "_age"));
-                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved city: "
-                        + keyValueStore.get("client" + clientId + "_city"));
-                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved country: "
-                        + keyValueStore.get("client" + clientId + "_country"));
-                KeyValueStoreClient.logger.info("Client " + clientId + " retrieved profession: "
-                        + keyValueStore.get("client" + clientId + "_profession"));
-
-                // Delete the key-value pairs
-                keyValueStore.delete("client" + clientId + "_name");
-                keyValueStore.delete("client" + clientId + "_age");
-                keyValueStore.delete("client" + clientId + "_city");
-                keyValueStore.delete("client" + clientId + "_country");
-                keyValueStore.delete("client" + clientId + "_profession");
-
-                // Log the deletion
-                KeyValueStoreClient.logger.info("Client " + clientId + " deleted its key-value pairs.");
-
-            } catch (Exception e) {
-                KeyValueStoreClient.logger.severe("Client " + clientId + " error: " + e.getMessage());
-            }
-        }
-    }
-
-    private static void setupLogger() {
         try {
-            Logger rootLogger = Logger.getLogger("");
-            Handler[] handlers = rootLogger.getHandlers();
-            for (Handler handler : handlers) {
-                rootLogger.removeHandler(handler);
-            }
+            String host = System.getenv("SERVER_HOST");
+            int port = Integer.parseInt(System.getenv("SERVER_PORT"));
 
-            FileHandler fileHandler = new FileHandler("logs/RMIClient.log");
-            fileHandler.setFormatter(new CustomFormatter());
-            rootLogger.addHandler(fileHandler);
-
-            ConsoleHandler consoleHandler = new ConsoleHandler();
-            consoleHandler.setFormatter(new CustomFormatter());
-            rootLogger.addHandler(consoleHandler);
-
-            rootLogger.setLevel(Level.INFO);
-        } catch (IOException e) {
-            System.err.println("Error setting up logger: " + e.getMessage());
+            KeyValueStoreClient client = new KeyValueStoreClient(host, port);
+            System.out.println("Connected to server at " + host + ":" + port);
+            client.testOperations();
+        } catch (Exception e) {
+            System.err.println("Client encountered an error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
