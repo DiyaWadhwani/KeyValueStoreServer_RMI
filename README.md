@@ -128,29 +128,28 @@ DELETE City: Succeeded (after 3 retries due to simulated failures)
 
 1. Proposer:
 
-- Generates unique, monotonically increasing proposal numbers.
-- Retries with higher proposal numbers when consensus fails.
+   - Generates unique, monotonically increasing proposal numbers.
+   - Retries with higher proposal numbers when consensus fails.
 
 2. Acceptor:
 
-- Responds to Prepare and Accept requests.
-- Simulates failures with a 40% probability during both phases.
+   - Responds to Prepare and Accept requests.
+   - Simulates failures with a 40% probability during both phases.
 
 3. Learner:
 
-- Applies the agreed-upon operations to the key-value store after consensus.
+   - Applies the agreed-upon operations to the key-value store after consensus.
 
 4. Retry Mechanism:
-
-- Operations are retried up to 5 times with new proposals upon failure in any phase.
+   - Operations are retried up to 5 times with new proposals upon failure in any phase.
 
 ## Log Outputs
 
 **Example Paxos Failure and Retry Logs**
 
-[PUT Operation with Simulated Failures](images/TerminalLogs-PUT.png "PUT Operation with Simulated Failures")
+![PUT Operation with Simulated Failures](images/TerminalLogs-PUT.png "PUT Operation with Simulated Failures")
 
-[DELETE Operation with Failure and Permanent Failure](images/TerminalLogs-DELETE.png "DELETE Operation with Failure and Permanent Failure")
+![DELETE Operation with Failure and Permanent Failure](images/TerminalLogs-DELETE.png "DELETE Operation with Failure and Permanent Failure")
 
 ## Environment Variables
 
