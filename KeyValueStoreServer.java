@@ -21,6 +21,7 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
     private static final String RED = "\u001B[31m";
     private static final String YELLOW = "\u001B[33m";
     private static final String BLUE = "\u001B[34m";
+    private static final String PURPLE = "\u001B[35m";
 
     public KeyValueStoreServer(int nodeId, List<String> peerAddresses) throws RemoteException {
         this.nodeId = nodeId;
@@ -63,7 +64,7 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
         }
 
         System.out.println(
-                RED + "Node " + nodeId + " - Operation permanently failed after retries: " + operation + RESET);
+                PURPLE + "Node " + nodeId + " - Operation permanently failed after retries: " + operation + RESET);
         return false;
     }
 
