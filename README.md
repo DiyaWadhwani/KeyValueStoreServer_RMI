@@ -6,7 +6,7 @@ The **KeyValueStoreServer RMI** project is a distributed key-value store impleme
 
 This project demonstrates key distributed systems concepts, including replication, fault tolerance, and consistency.
 
----
+
 
 ## Features
 
@@ -17,7 +17,7 @@ This project demonstrates key distributed systems concepts, including replicatio
 - **Fault Tolerance**: Simulates node failures in the Prepare and Accept phases of Paxos to test recovery and retries.
 - **Dynamic Proposal Management**: Each server maintains unique proposal numbers to support the Paxos protocol.
 
----
+
 
 ## Architecture
 
@@ -29,7 +29,7 @@ This project demonstrates key distributed systems concepts, including replicatio
   - A command-line interface (CLI) for performing `PUT`, `GET`, and `DELETE` operations.
   - Interacts with a single server, which ensures consistency via Paxos.
 
----
+
 
 ## Components
 
@@ -70,7 +70,7 @@ Defines the multi-container setup for the system using Docker Compose:
 - Each server is a container with a unique port.
 - A single client interacts with the servers.
 
----
+
 
 ## Requirements
 
@@ -78,7 +78,7 @@ Defines the multi-container setup for the system using Docker Compose:
 - **Docker** (for containerization)
 - **Docker Compose** (for orchestration)
 
----
+
 
 ## Setup and Execution
 
@@ -99,7 +99,7 @@ docker-compose up --build
 
 Head to Docker, and run the client container to view logs.
 
----
+
 
 ## Operations Performed
 
