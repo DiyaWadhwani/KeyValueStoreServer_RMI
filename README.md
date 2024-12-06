@@ -6,8 +6,6 @@ The **KeyValueStoreServer RMI** project is a distributed key-value store impleme
 
 This project demonstrates key distributed systems concepts, including replication, fault tolerance, and consistency.
 
-
-
 ## Features
 
 - **CRUD Operations**: `GET`, `PUT`, and `DELETE` key-value pairs.
@@ -16,8 +14,6 @@ This project demonstrates key distributed systems concepts, including replicatio
 - **Client-Server Communication**: The client communicates with one server, which ensures consensus across all connected replicas using Paxos.
 - **Fault Tolerance**: Simulates node failures in the Prepare and Accept phases of Paxos to test recovery and retries.
 - **Dynamic Proposal Management**: Each server maintains unique proposal numbers to support the Paxos protocol.
-
-
 
 ## Architecture
 
@@ -28,8 +24,6 @@ This project demonstrates key distributed systems concepts, including replicatio
 - **Client**:
   - A command-line interface (CLI) for performing `PUT`, `GET`, and `DELETE` operations.
   - Interacts with a single server, which ensures consistency via Paxos.
-
-
 
 ## Components
 
@@ -70,15 +64,11 @@ Defines the multi-container setup for the system using Docker Compose:
 - Each server is a container with a unique port.
 - A single client interacts with the servers.
 
-
-
 ## Requirements
 
 - **Java 17+**
 - **Docker** (for containerization)
 - **Docker Compose** (for orchestration)
-
-
 
 ## Setup and Execution
 
@@ -98,8 +88,6 @@ docker-compose up --build
 ### 3. **Run the Client**
 
 Head to Docker, and run the client container to view logs.
-
-
 
 ## Operations Performed
 
@@ -160,13 +148,13 @@ DELETE City: Succeeded (after 3 retries due to simulated failures)
 
 **Example Paxos Failure and Retry Logs**
 
-# PUT Operation with Simulated Failures
+### PUT Operation with Simulated Failures
 
-(images/TerminalLogs-PUT.png)
+[](images/TerminalLogs-PUT.png)
 
-# DELETE Operation with Failure and Permanent Failure
+### DELETE Operation with Failure and Permanent Failure
 
-(images/TerminalLogs-DELETE.png)
+[](images/TerminalLogs-DELETE.png)
 
 ## Environment Variables
 
