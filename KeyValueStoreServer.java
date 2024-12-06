@@ -6,100 +6,208 @@ import java.net.InetAddress;
 
 public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValueStoreInterface {
     private final Map<String, String> store = new HashMap<>();
-    private final List<KeyValueStoreInterface> replicas = new ArrayList<>();
-    private final List<String> replicaServers;
+    private final int nodeId;
+    private final List<String> peerAddresses;
 
-    public KeyValueStoreServer(List<String> replicaServers) throws RemoteException {
-        this.replicaServers = replicaServers;
+    private int proposalCounter = 0; // Node-specific proposal counter
+    private int highestPromised = 0;
+    private int highestAcceptedProposal = 0;
+    private String acceptedValue = null;
+    private final Random random = new Random();
+
+    // ANSI color codes for terminal output
+    private static final String RESET = "\u001B[0m";
+    private static final String GREEN = "\u001B[32m";
+    private static final String RED = "\u001B[31m";
+    private static final String YELLOW = "\u001B[33m";
+    private static final String BLUE = "\u001B[34m";
+
+    public KeyValueStoreServer(int nodeId, List<String> peerAddresses) throws RemoteException {
+        this.nodeId = nodeId;
+        this.peerAddresses = peerAddresses;
     }
 
     @Override
     public String get(String key) throws RemoteException {
+        System.out.println(BLUE + "Node " + nodeId + " - GET operation: Key = " + key + RESET);
         return store.getOrDefault(key, null);
     }
 
     @Override
     public boolean put(String key, String value) throws RemoteException {
-        store.put(key, value);
-        replicateToReplicas("put", key, value);
-        return true;
+        System.out.println(BLUE + "Node " + nodeId + " - PUT operation: Key = " + key + ", Value = " + value + RESET);
+        return executeWithRetries("PUT:" + key + ":" + value);
     }
 
     @Override
     public boolean delete(String key) throws RemoteException {
-        store.remove(key);
-        replicateToReplicas("delete", key, null);
+        System.out.println(BLUE + "Node " + nodeId + " - DELETE operation: Key = " + key + RESET);
+        return executeWithRetries("DELETE:" + key);
+    }
+
+    private boolean executeWithRetries(String operation) {
+        int retries = 5; // Retry up to 5 times
+        while (retries > 0) {
+            int proposalNumber = generateProposalNumber(); // Incrementing proposal number
+            System.out.println(BLUE + "Node " + nodeId + " - Starting Paxos for operation: " + operation
+                    + " with proposal: " + proposalNumber + RESET);
+
+            if (runPaxos(proposalNumber, operation)) {
+                System.out.println(GREEN + "Node " + nodeId + " - Operation succeeded: " + operation + RESET);
+                return true;
+            }
+
+            System.out
+                    .println(YELLOW + "Node " + nodeId + " - Operation failed: " + operation + ". Retrying..." + RESET);
+            retries--;
+        }
+
+        System.out.println(
+                RED + "Node " + nodeId + " - Operation permanently failed after retries: " + operation + RESET);
+        return false;
+    }
+
+    private int generateProposalNumber() {
+        proposalCounter++;
+        return proposalCounter * 1000 + nodeId; // Ensures unique and incrementing proposal numbers
+    }
+
+    private boolean runPaxos(int proposalNumber, String operation) {
+        // Phase 1: Prepare
+        int prepareAckCount = 0;
+        for (String peer : peerAddresses) {
+            try {
+                String[] parts = peer.split(":");
+                Registry registry = LocateRegistry.getRegistry(parts[0], Integer.parseInt(parts[1]));
+                KeyValueStoreInterface peerStub = (KeyValueStoreInterface) registry.lookup("KeyValueStore");
+
+                if (peerStub.prepare(proposalNumber, operation)) {
+                    prepareAckCount++;
+                }
+            } catch (Exception e) {
+                System.out.println(
+                        RED + "Node " + nodeId + " - Prepare failed for peer " + peer + ": " + e.getMessage() + RESET);
+            }
+        }
+
+        System.out.println(BLUE + "Node " + nodeId + " - Prepare phase completed. Acks: " + prepareAckCount + RESET);
+
+        if (prepareAckCount <= peerAddresses.size() / 2) {
+            System.out.println(RED + "Node " + nodeId + " - Prepare phase failed." + RESET);
+            return false;
+        }
+
+        // Phase 2: Accept
+        int acceptAckCount = 0;
+        for (String peer : peerAddresses) {
+            try {
+                String[] parts = peer.split(":");
+                Registry registry = LocateRegistry.getRegistry(parts[0], Integer.parseInt(parts[1]));
+                KeyValueStoreInterface peerStub = (KeyValueStoreInterface) registry.lookup("KeyValueStore");
+
+                if (peerStub.accept(proposalNumber, operation)) {
+                    acceptAckCount++;
+                }
+            } catch (Exception e) {
+                System.out.println(
+                        RED + "Node " + nodeId + " - Accept failed for peer " + peer + ": " + e.getMessage() + RESET);
+            }
+        }
+
+        System.out.println(BLUE + "Node " + nodeId + " - Accept phase completed. Acks: " + acceptAckCount + RESET);
+
+        if (acceptAckCount <= peerAddresses.size() / 2) {
+            System.out.println(RED + "Node " + nodeId + " - Accept phase failed." + RESET);
+            return false;
+        }
+
+        // Phase 3: Learn
+        for (String peer : peerAddresses) {
+            try {
+                String[] parts = peer.split(":");
+                Registry registry = LocateRegistry.getRegistry(parts[0], Integer.parseInt(parts[1]));
+                KeyValueStoreInterface peerStub = (KeyValueStoreInterface) registry.lookup("KeyValueStore");
+
+                peerStub.learn(operation);
+            } catch (Exception e) {
+                System.out.println(
+                        RED + "Node " + nodeId + " - Learn failed for peer " + peer + ": " + e.getMessage() + RESET);
+            }
+        }
+
+        System.out.println(GREEN + "Node " + nodeId + " - Learn phase completed." + RESET);
+        applyOperation(operation);
         return true;
     }
 
     @Override
-    public boolean prepare(String operation, String key, String value) throws RemoteException {
-        // In a real-world implementation, this would involve locking the resource
-        // and checking for potential conflicts or readiness.
-        System.out.println("Preparing operation: " + operation + " on key: " + key + " with value: " + value);
-        return true; // Indicate readiness to commit
+    public boolean prepare(int proposalNumber, String operation) throws RemoteException {
+        synchronized (this) {
+            // Simulate random failure
+            if (random.nextDouble() < 0.2) { // 20% chance to fail
+                System.out.println(RED + "Node " + nodeId + " - Simulating failure during Prepare phase for proposal: "
+                        + proposalNumber + RESET);
+                return false;
+            }
+
+            if (proposalNumber > highestPromised) {
+                highestPromised = proposalNumber;
+                System.out
+                        .println(GREEN + "Node " + nodeId + " - Promise made for proposal: " + proposalNumber + RESET);
+                return true;
+            }
+
+            System.out.println(RED + "Node " + nodeId + " - Rejected proposal: " + proposalNumber
+                    + " (Highest Promised: " + highestPromised + ")" + RESET);
+            return false;
+        }
     }
 
     @Override
-    public boolean commit(String operation, String key, String value) throws RemoteException {
-        switch (operation.toLowerCase()) {
-            case "put":
-                store.put(key, value);
-                return true;
-            case "delete":
-                store.remove(key);
-                return true;
-            default:
+    public boolean accept(int proposalNumber, String operation) throws RemoteException {
+        synchronized (this) {
+            // Simulate random failure
+            if (random.nextDouble() < 0.4) { // 40% chance to fail
+                System.out.println(RED + "Node " + nodeId + " - Simulating failure during Accept phase for proposal: "
+                        + proposalNumber + RESET);
                 return false;
+            }
+
+            if (proposalNumber >= highestPromised) {
+                highestPromised = proposalNumber;
+                highestAcceptedProposal = proposalNumber;
+                acceptedValue = operation;
+                System.out.println(GREEN + "Node " + nodeId + " - Accepted proposal: " + proposalNumber + RESET);
+                return true;
+            }
+
+            System.out.println(RED + "Node " + nodeId + " - Rejected proposal: " + proposalNumber
+                    + " (Highest Promised: " + highestPromised + ")" + RESET);
+            return false;
         }
     }
 
-    private void replicateToReplicas(String operation, String key, String value) {
-        for (KeyValueStoreInterface replica : replicas) {
-            try {
-                // Prepare phase
-                boolean ready = replica.prepare(operation, key, value);
-                if (ready) {
-                    // Commit phase
-                    replica.commit(operation, key, value);
-                } else {
-                    System.err.println("Replica not ready to commit operation: " + operation);
-                }
-            } catch (RemoteException e) {
-                System.err.println("Failed to replicate operation to a replica: " + e.getMessage());
-            }
-        }
+    @Override
+    public void learn(String operation) throws RemoteException {
+        applyOperation(operation);
     }
 
-    public void connectToReplicas() {
-        for (String replica : replicaServers) {
-            int retries = 5;
-            while (retries > 0) {
-                try {
-                    String[] parts = replica.split(":");
-                    String host = parts[0];
-                    int port = Integer.parseInt(parts[1]);
+    private void applyOperation(String operation) {
+        String[] parts = operation.split(":");
+        String type = parts[0];
+        String key = parts[1];
+        String value = parts.length > 2 ? parts[2] : null;
 
-                    Registry registry = LocateRegistry.getRegistry(host, port);
-                    KeyValueStoreInterface stub = (KeyValueStoreInterface) registry.lookup("KeyValueStore");
-
-                    System.out.println("Connected to replica at " + replica);
-                    replicas.add(stub);
-                    break; // Exit retry loop on success
-                } catch (Exception e) {
-                    System.err.println("Failed to connect to replica at " + replica + ". Retrying... (" + retries
-                            + " retries left)");
-                    retries--;
-                    try {
-                        Thread.sleep(2000); // Wait before retrying
-                    } catch (InterruptedException ie) {
-                        ie.printStackTrace();
-                    }
-                }
-            }
-
-            if (retries == 0) {
-                System.err.println("Could not connect to replica at " + replica);
+        synchronized (this) {
+            switch (type) {
+                case "PUT":
+                    store.put(key, value);
+                    System.out.println(GREEN + "Node " + nodeId + " - Key added: " + key + " = " + value + RESET);
+                    break;
+                case "DELETE":
+                    store.remove(key);
+                    System.out.println(GREEN + "Node " + nodeId + " - Key deleted: " + key + RESET);
+                    break;
             }
         }
     }
@@ -108,24 +216,23 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
         try {
             String host = InetAddress.getLocalHost().getHostName();
             int port = Integer.parseInt(System.getenv("PORT"));
-            String replicas = System.getenv("REPLICAS");
+            int nodeId = Integer.parseInt(System.getenv("NODE_ID"));
+            String peers = System.getenv("PEERS");
 
-            KeyValueStoreServer server = new KeyValueStoreServer(parseReplicas(replicas));
+            List<String> peerAddresses = parsePeers(peers);
+
+            KeyValueStoreServer server = new KeyValueStoreServer(nodeId, peerAddresses);
             LocateRegistry.createRegistry(port);
             Naming.rebind("//" + host + ":" + port + "/KeyValueStore", server);
 
-            System.out.println("KeyValueStoreServer started on " + host + ":" + port);
-            System.out.println("Replicas: " + replicas);
-
-            // Add a delay before connecting to replicas
-            Thread.sleep(5000); // Wait 5 seconds for other servers to initialize
-            server.connectToReplicas();
+            System.out.println(GREEN + "KeyValueStoreServer started on " + host + ":" + port + RESET);
         } catch (Exception e) {
+            System.out.println(RED + "Error starting server: " + e.getMessage() + RESET);
             e.printStackTrace();
         }
     }
 
-    private static List<String> parseReplicas(String replicas) {
-        return replicas == null || replicas.isEmpty() ? new ArrayList<>() : Arrays.asList(replicas.split(","));
+    private static List<String> parsePeers(String peers) {
+        return peers == null || peers.isEmpty() ? new ArrayList<>() : Arrays.asList(peers.split(","));
     }
 }

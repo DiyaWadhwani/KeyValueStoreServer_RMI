@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   kv_server_1:
     build:
@@ -5,62 +6,30 @@ services:
       dockerfile: Dockerfile.server
     environment:
       - PORT=5010
-      - REPLICAS=kv_server_2:5011,kv_server_3:5012,kv_server_4:5013,kv_server_5:5014
+      - NODE_ID=1
+      - PEERS=kv_server_2:5011,kv_server_3:5012
     networks:
       - kv_network
-
   kv_server_2:
     build:
       context: .
       dockerfile: Dockerfile.server
     environment:
       - PORT=5011
-      - REPLICAS=kv_server_1:5010,kv_server_3:5012,kv_server_4:5013,kv_server_5:5014
+      - NODE_ID=2
+      - PEERS=kv_server_1:5010,kv_server_3:5012
     networks:
       - kv_network
-
   kv_server_3:
     build:
       context: .
       dockerfile: Dockerfile.server
     environment:
       - PORT=5012
-      - REPLICAS=kv_server_1:5010,kv_server_2:5011,kv_server_4:5013,kv_server_5:5014
+      - NODE_ID=3
+      - PEERS=kv_server_1:5010,kv_server_2:5011
     networks:
       - kv_network
-
-  kv_server_4:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
-    environment:
-      - PORT=5013
-      - REPLICAS=kv_server_1:5010,kv_server_2:5011,kv_server_3:5012,kv_server_5:5014
-    networks:
-      - kv_network
-
-  kv_server_5:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
-    environment:
-      - PORT=5014
-      - REPLICAS=kv_server_1:5010,kv_server_2:5011,kv_server_3:5012,kv_server_4:5013
-    networks:
-      - kv_network
-
-  kv_client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    environment:
-      - SERVER_HOST=kv_server_1
-      - SERVER_PORT=5010
-    depends_on:
-      - kv_server_1
-    networks:
-      - kv_network
-
 networks:
   kv_network:
     driver: bridge
