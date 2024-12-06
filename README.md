@@ -148,13 +148,9 @@ DELETE City: Succeeded (after 3 retries due to simulated failures)
 
 **Example Paxos Failure and Retry Logs**
 
-### PUT Operation with Simulated Failures
+[PUT Operation with Simulated Failures](images/TerminalLogs-PUT.png)
 
-[](images/TerminalLogs-PUT.png)
-
-### DELETE Operation with Failure and Permanent Failure
-
-[](images/TerminalLogs-DELETE.png)
+[DELETE Operation with Failure and Permanent Failure](images/TerminalLogs-DELETE.png)
 
 ## Environment Variables
 
