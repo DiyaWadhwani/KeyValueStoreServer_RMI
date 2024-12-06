@@ -155,6 +155,10 @@ DELETE City: Succeeded (after 3 retries due to simulated failures)
 
 ![DELETE Operation with Failure and Permanent Failure](images/TerminalLogs-DELETE.png "DELETE Operation with Failure and Permanent Failure")
 
+### Graceful Shutdown after inactivity
+
+![Graceful Shutdown after inactivity](images/gracefulShutdown.png "Graceful Shutdown after inactivity")
+
 ## Environment Variables
 
 - **`PORT`**: The port number for the server.

@@ -2,14 +2,17 @@ import java.rmi.*;
 import java.rmi.registry.*;
 import java.rmi.server.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.net.InetAddress;
 
 public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValueStoreInterface {
     private final Map<String, String> store = new HashMap<>();
     private final int nodeId;
     private final List<String> peerAddresses;
+    private final AtomicInteger activeOperations = new AtomicInteger(0); // Track active operations
+    private final Timer shutdownTimer = new Timer(); // Timer for graceful shutdown
 
-    private int proposalCounter = 0; // Node-specific proposal counter
+    private int proposalCounter = 0;
     private int highestPromised = 0;
     private int highestAcceptedProposal = 0;
     private String acceptedValue = null;
@@ -26,24 +29,58 @@ public class KeyValueStoreServer extends UnicastRemoteObject implements KeyValue
     public KeyValueStoreServer(int nodeId, List<String> peerAddresses) throws RemoteException {
         this.nodeId = nodeId;
         this.peerAddresses = peerAddresses;
+        startShutdownWatcher();
+    }
+
+    private void startShutdownWatcher() {
+        shutdownTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (activeOperations.get() == 0) {
+                    System.out.println(
+                            PURPLE + "Node " + nodeId + " - No active operations. Shutting down gracefully." + RESET);
+                    shutdown();
+                }
+            }
+        }, 5000, 5000); // Check every 5 seconds
+    }
+
+    private void shutdown() {
+        try {
+            UnicastRemoteObject.unexportObject(this, true);
+            shutdownTimer.cancel();
+            System.out.println(GREEN + "Node " + nodeId + " - Server stopped successfully." + RESET);
+            System.exit(0);
+        } catch (Exception e) {
+            System.out.println(RED + "Node " + nodeId + " - Error during shutdown: " + e.getMessage() + RESET);
+        }
     }
 
     @Override
     public String get(String key) throws RemoteException {
+        activeOperations.incrementAndGet();
         System.out.println(BLUE + "Node " + nodeId + " - GET operation: Key = " + key + RESET);
-        return store.getOrDefault(key, null);
+        String result = store.getOrDefault(key, null);
+        activeOperations.decrementAndGet();
+        return result;
     }
 
     @Override
     public boolean put(String key, String value) throws RemoteException {
+        activeOperations.incrementAndGet();
         System.out.println(BLUE + "Node " + nodeId + " - PUT operation: Key = " + key + ", Value = " + value + RESET);
-        return executeWithRetries("PUT:" + key + ":" + value);
+        boolean result = executeWithRetries("PUT:" + key + ":" + value);
+        activeOperations.decrementAndGet();
+        return result;
     }
 
     @Override
     public boolean delete(String key) throws RemoteException {
+        activeOperations.incrementAndGet();
         System.out.println(BLUE + "Node " + nodeId + " - DELETE operation: Key = " + key + RESET);
-        return executeWithRetries("DELETE:" + key);
+        boolean result = executeWithRetries("DELETE:" + key);
+        activeOperations.decrementAndGet();
+        return result;
     }
 
     private boolean executeWithRetries(String operation) {
